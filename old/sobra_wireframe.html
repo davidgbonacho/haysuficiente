@@ -1,0 +1,207 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .wf-root { background: #0d1117; color: #e6edf3; border-radius: var(--border-radius-lg); overflow: hidden; min-height: 640px; display: flex; flex-direction: column; }
+  .wf-topbar { background: #161b22; border-bottom: 0.5px solid #30363d; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .wf-logo { font-size: 22px; font-weight: 500; letter-spacing: 4px; color: #f0e68c; font-family: var(--font-serif); }
+  .wf-logo span { color: #e8d5a3; font-size: 11px; font-weight: 400; letter-spacing: 2px; display: block; margin-top: -2px; }
+  .wf-nav { display: flex; gap: 8px; align-items: center; }
+  .wf-nav-btn { font-size: 11px; padding: 5px 12px; border-radius: 20px; border: 0.5px solid #30363d; color: #8b949e; background: transparent; cursor: pointer; }
+  .wf-nav-btn.active { border-color: #f0e68c; color: #f0e68c; }
+  .wf-main { display: flex; flex: 1; }
+  .wf-sidebar-left { width: 48px; background: #161b22; border-right: 0.5px solid #30363d; display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 20px; }
+  .wf-tool { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 16px; }
+  .wf-tool.active { background: #f0e68c22; color: #f0e68c; }
+  .wf-map-area { flex: 1; position: relative; background: #0d1117; overflow: hidden; }
+
+  .wf-map-bg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .wf-map-label { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #484f58; letter-spacing: 1px; text-transform: uppercase; }
+
+  .wf-continent { fill: #1c2936; stroke: #30363d; stroke-width: 0.5; }
+  .wf-country-hunger { fill: #7f2424; stroke: #30363d; stroke-width: 0.5; }
+  .wf-country-waste { fill: #7a5c00; stroke: #30363d; stroke-width: 0.5; }
+  .wf-country-selected { fill: #1d6b4a; stroke: #2ea67a; stroke-width: 1.5; }
+  .wf-country-neutral { fill: #1c2936; stroke: #30363d; stroke-width: 0.5; }
+
+  .wf-layers { position: absolute; bottom: 16px; left: 16px; background: #161b22cc; border: 0.5px solid #30363d; border-radius: var(--border-radius-md); padding: 10px 12px; }
+  .wf-layers-title { font-size: 10px; color: #484f58; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .wf-layer-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #8b949e; margin-bottom: 5px; }
+  .wf-layer-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .wf-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+  .wf-hint-text { font-size: 11px; color: #484f58; letter-spacing: 0.5px; }
+
+  .wf-crosshair { position: absolute; width: 12px; height: 12px; border: 1.5px solid #2ea67a; border-radius: 50%; transform: translate(-50%, -50%); }
+  .wf-crosshair::before, .wf-crosshair::after { content: ''; position: absolute; background: #2ea67a; }
+  .wf-crosshair::before { width: 1px; height: 8px; left: 4px; top: -6px; }
+  .wf-crosshair::after { width: 8px; height: 1px; top: 4px; left: -6px; }
+
+  .wf-panel { width: 220px; background: #161b22; border-left: 0.5px solid #30363d; padding: 16px; overflow-y: auto; }
+  .wf-panel-country { font-size: 16px; font-weight: 500; color: #e6edf3; margin-bottom: 2px; }
+  .wf-panel-region { font-size: 11px; color: #484f58; margin-bottom: 16px; }
+  .wf-stat { background: #0d1117; border-radius: var(--border-radius-md); padding: 10px 12px; margin-bottom: 8px; border: 0.5px solid #21262d; }
+  .wf-stat-label { font-size: 10px; color: #484f58; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+  .wf-stat-value { font-size: 20px; font-weight: 500; }
+  .wf-stat-value.hunger { color: #f47068; }
+  .wf-stat-value.waste { color: #d4a017; }
+  .wf-stat-value.conflict { color: #8b949e; }
+  .wf-stat-value.green { color: #2ea67a; }
+  .wf-stat-sub { font-size: 10px; color: #484f58; margin-top: 2px; }
+  .wf-bar { height: 3px; border-radius: 2px; margin-top: 6px; background: #21262d; overflow: hidden; }
+  .wf-bar-fill { height: 100%; border-radius: 2px; }
+
+  .wf-insight { border: 0.5px solid #21262d; border-left: 2px solid #d4a017; border-radius: var(--border-radius-md); padding: 10px 12px; margin-top: 12px; font-size: 11px; color: #8b949e; line-height: 1.6; }
+  .wf-insight strong { color: #d4a017; }
+
+  .wf-mode-bar { background: #161b22; border-top: 0.5px solid #30363d; padding: 10px 20px; display: flex; gap: 8px; justify-content: center; }
+  .wf-mode { font-size: 11px; padding: 6px 14px; border-radius: 20px; border: 0.5px solid #30363d; color: #8b949e; background: transparent; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .wf-mode.active { border-color: #2ea67a; color: #2ea67a; background: #1d6b4a22; }
+  .wf-mode i { font-size: 13px; }
+
+  .wf-anno { position: absolute; background: #161b22cc; border: 0.5px solid #30363d; border-radius: var(--border-radius-md); padding: 6px 10px; font-size: 10px; color: #8b949e; pointer-events: none; }
+  .wf-anno::after { content: ''; position: absolute; width: 20px; height: 0.5px; background: #30363d; }
+
+  .wf-scale { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .wf-scale-label { font-size: 9px; color: #484f58; }
+  .wf-scale-bar { width: 8px; height: 80px; border-radius: 4px; background: linear-gradient(to bottom, #7f2424, #3a1010); }
+  .wf-scale-ticks { display: flex; flex-direction: column; justify-content: space-between; height: 80px; }
+  .wf-scale-tick { font-size: 9px; color: #484f58; }
+</style>
+
+<h2 class="sr-only">Wireframe de la aplicación SOBRA — mapa interactivo de hambre y desperdicio alimentario</h2>
+
+<div class="wf-root">
+
+  <div class="wf-topbar">
+    <div class="wf-logo">SOBRA<span>el mapa del hambre y el desperdicio</span></div>
+    <div class="wf-nav">
+      <button class="wf-nav-btn active">Explorar</button>
+      <button class="wf-nav-btn">Comparar</button>
+      <button class="wf-nav-btn">Reto</button>
+      <button class="wf-nav-btn" style="margin-left:8px;"><i class="ti ti-info-circle" aria-hidden="true"></i></button>
+    </div>
+  </div>
+
+  <div class="wf-main">
+
+    <div class="wf-sidebar-left">
+      <div class="wf-tool active" title="Selección"><i class="ti ti-pointer" aria-hidden="true"></i></div>
+      <div class="wf-tool" title="Capas"><i class="ti ti-layers-difference" aria-hidden="true"></i></div>
+      <div class="wf-tool" title="Búsqueda"><i class="ti ti-search" aria-hidden="true"></i></div>
+      <div class="wf-tool" title="Comparar"><i class="ti ti-arrows-diff" aria-hidden="true"></i></div>
+      <div style="flex:1"></div>
+      <div class="wf-tool" title="Compartir"><i class="ti ti-share" aria-hidden="true"></i></div>
+    </div>
+
+    <div class="wf-map-area">
+      <div class="wf-map-label">Prevalencia de inseguridad alimentaria — FAO 2024</div>
+
+      <svg viewBox="0 0 520 360" width="100%" height="100%" style="position:absolute;inset:0;">
+        <rect width="520" height="360" fill="#0d1117"/>
+
+        <ellipse cx="80" cy="160" rx="55" ry="70" class="wf-country-hunger"/>
+        <ellipse cx="135" cy="145" rx="25" ry="30" class="wf-country-hunger" style="fill:#5a1a1a"/>
+        <ellipse cx="80" cy="230" rx="40" ry="25" class="wf-country-neutral"/>
+
+        <ellipse cx="240" cy="130" rx="45" ry="35" class="wf-country-neutral" style="fill:#1c2d20"/>
+        <ellipse cx="230" cy="175" rx="30" ry="40" class="wf-country-neutral"/>
+        <ellipse cx="270" cy="165" rx="20" ry="30" class="wf-country-neutral"/>
+
+        <ellipse cx="300" cy="120" rx="35" ry="25" class="wf-country-waste"/>
+        <ellipse cx="350" cy="110" rx="30" ry="22" class="wf-country-waste" style="fill:#8a6800"/>
+
+        <ellipse cx="370" cy="160" rx="55" ry="45" class="wf-country-hunger" style="fill:#9e2a2a"/>
+        <ellipse cx="420" cy="150" rx="30" ry="35" class="wf-country-hunger" style="fill:#7a1f1f"/>
+        <ellipse cx="440" cy="200" rx="25" ry="30" class="wf-country-hunger" style="fill:#5a1a1a"/>
+
+        <ellipse cx="385" cy="230" rx="20" ry="15" class="wf-country-selected"/>
+
+        <ellipse cx="460" cy="270" rx="35" ry="28" class="wf-country-neutral" style="fill:#1c2428"/>
+        <ellipse cx="180" cy="280" rx="30" ry="22" class="wf-country-neutral"/>
+        <ellipse cx="90" cy="300" rx="20" ry="14" class="wf-country-neutral"/>
+
+        <circle cx="385" cy="230" r="5" fill="none" stroke="#2ea67a" stroke-width="1.5"/>
+        <circle cx="385" cy="230" r="10" fill="none" stroke="#2ea67a22" stroke-width="8"/>
+        <line x1="390" y1="225" x2="420" y2="200" stroke="#2ea67a" stroke-width="0.5" stroke-dasharray="3,2"/>
+
+        <rect x="416" y="186" width="80" height="24" rx="4" fill="#161b22" stroke="#2ea67a" stroke-width="0.5"/>
+        <text x="456" y="202" text-anchor="middle" font-size="9" fill="#2ea67a" font-family="var(--font-sans)">Yemen — seleccionado</text>
+
+        <circle cx="300" cy="120" r="4" fill="#d4a017" opacity="0.8"/>
+        <circle cx="350" cy="110" r="4" fill="#d4a017" opacity="0.8"/>
+
+        <text x="260" y="354" text-anchor="middle" font-size="9" fill="#30363d" font-family="var(--font-sans)">Mapa esquemático — representación de wireframe</text>
+      </svg>
+
+      <div class="wf-layers">
+        <div class="wf-layers-title">Capas activas</div>
+        <div class="wf-layer-row"><div class="wf-layer-dot" style="background:#f47068"></div>Hambre (activa)</div>
+        <div class="wf-layer-row" style="opacity:0.4"><div class="wf-layer-dot" style="background:#d4a017"></div>Desperdicio</div>
+        <div class="wf-layer-row" style="opacity:0.4"><div class="wf-layer-dot" style="background:#8b949e"></div>Conflictos</div>
+        <div class="wf-layer-row" style="opacity:0.4"><div class="wf-layer-dot" style="background:#2ea67a"></div>Producción</div>
+      </div>
+
+      <div class="wf-scale">
+        <div class="wf-scale-label">Alto</div>
+        <div class="wf-scale-bar"></div>
+        <div class="wf-scale-label">Bajo</div>
+      </div>
+
+    </div>
+
+    <div class="wf-panel">
+      <div class="wf-panel-country">Yemen</div>
+      <div class="wf-panel-region">Oriente Medio · Asia Occidental</div>
+
+      <div class="wf-stat">
+        <div class="wf-stat-label">Inseguridad alimentaria</div>
+        <div class="wf-stat-value hunger">42.6%</div>
+        <div class="wf-stat-sub">de la población</div>
+        <div class="wf-bar"><div class="wf-bar-fill" style="width:42%;background:#f47068"></div></div>
+      </div>
+
+      <div class="wf-stat">
+        <div class="wf-stat-label">Desperdicio alimentario</div>
+        <div class="wf-stat-value waste">98 kg</div>
+        <div class="wf-stat-sub">por persona / año</div>
+        <div class="wf-bar"><div class="wf-bar-fill" style="width:28%;background:#d4a017"></div></div>
+      </div>
+
+      <div class="wf-stat">
+        <div class="wf-stat-label">Niños con retraso en crecimiento</div>
+        <div class="wf-stat-value hunger">46.5%</div>
+        <div class="wf-stat-sub">menores de 5 años · WHO</div>
+        <div class="wf-bar"><div class="wf-bar-fill" style="width:46%;background:#f47068"></div></div>
+      </div>
+
+      <div class="wf-stat">
+        <div class="wf-stat-label">Conflicto activo</div>
+        <div class="wf-stat-value conflict"><i class="ti ti-alert-triangle" aria-hidden="true" style="font-size:16px;color:#d4a017"></i> Sí</div>
+        <div class="wf-stat-sub">desde 2014 · UCDP</div>
+      </div>
+
+      <div class="wf-stat">
+        <div class="wf-stat-label">PIB per cápita</div>
+        <div class="wf-stat-value green">$824</div>
+        <div class="wf-stat-sub">USD · World Bank</div>
+      </div>
+
+      <div class="wf-insight">
+        <strong>España</strong> desperdicia 3.2M de toneladas al año. Con esa cantidad podría cubrir el déficit alimentario de Yemen durante <strong>18 meses.</strong>
+      </div>
+
+      <button style="width:100%;margin-top:12px;font-size:11px;padding:8px;border-radius:20px;border:0.5px solid #2ea67a;color:#2ea67a;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <i class="ti ti-arrows-diff" aria-hidden="true"></i> Comparar con otro país ↗
+      </button>
+    </div>
+
+  </div>
+
+  <div class="wf-mode-bar">
+    <button class="wf-mode active"><i class="ti ti-pointer" aria-hidden="true"></i> Modo exploración</button>
+    <button class="wf-mode"><i class="ti ti-arrows-diff" aria-hidden="true"></i> Comparativa A vs B</button>
+    <button class="wf-mode"><i class="ti ti-trophy" aria-hidden="true"></i> Modo reto</button>
+  </div>
+
+</div>
